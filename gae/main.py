@@ -1,85 +1,45 @@
-import webapp2
-
 import json
 
-from google.appengine.ext import ndb
+import webapp2
+
+from review import Review
+from review_util import review_properties
 
 
-class Book(ndb.Model):
-    """A main model for representing an individual Book."""
-    publication_year = ndb.IntegerProperty(indexed=False)
-    author = ndb.StringProperty(indexed=True)
-    title = ndb.StringProperty(indexed=True)
-# # [END Book]
+class ReviewsForProductHandler(webapp2.RequestHandler):
+    def get(self, product_id):
+        pass
 
 
-class HomeHandler(webapp2.RequestHandler):
-    def get(self):
-        self.response.write('Hello world!')
+class ReviewsForMemberHandler(webapp2.RequestHandler):
+    def get(self, member_id):
+        pass
 
 
-class BookListHandler(webapp2.RequestHandler):
-    def get(self):
-        self.response.write('We should display a list.')
+class ReviewHandler(webapp2.RequestHandler):
 
-
-class BookByISBNHandler(webapp2.RequestHandler):
-    def get(self, isbn):
-        book = Book.get_by_id(isbn)
-        book_dict = book.to_dict()
-        book_dict["isbn_number"] = isbn
-        response_body = json.dumps(book_dict)
-        self.response.write(response_body)
-
-    def put(self, isbn):
-        book = Book.get_by_id(isbn)
+    def post(self, product_id, member_id):
         json_string = self.request.body
-        json_dict = json.loads(json_string)
-        for key, value in json_dict.iteritems():
-            setattr(book, key, value)
-            print("Setting key " + key + " to value " + value)
-        book.put()
-        book_dict = book.to_dict()
-        book_dict["isbn_number"] = isbn
-        response_body = json.dumps(book_dict)
-        self.response.write(response_body)
+        review_props = review_properties(json_string)
+        new_review = Review(
+            product_id=product_id,
+            member_id=member_id,
+            review_time=review_props["review_time"],
+            overall=review_props["overall"],
+            summary=review_props["summary"],
+            text=review_props["text"]
+        )
 
-    def post(self, isbn):
+        new_review.put()
 
-        json_string = self.request.body
-        json_object = json.loads(json_string)
-
-        publication_year = json_object["publication_year"]
-        author = json_object["author"]
-        title = json_object["title"]
-
-        new_book = Book(id=isbn,
-                        title=title,
-                        author=author,
-                        publication_year=publication_year)
-
-        new_book.put()
-        json_response_dict = new_book.to_dict()
-        json_response_dict["isbn"] = isbn
+        json_response_dict = new_review.to_dict()
         json_response_string = json.dumps(json_response_dict)
         self.response.headers["Content-Type"] = "application/json"
         self.response.write(json_response_string)
 
-    def delete(self, isbn):
-        book_key = ndb.Key('Book', isbn)
-        book_key.delete()
-        self.response.write('Deleted book with isbn ' + isbn)
-
 
 app = webapp2.WSGIApplication([
-    webapp2.Route(r'/', handler=HomeHandler, name='home'),
-    webapp2.Route(r'/books', handler=BookListHandler, name='book-list'),
-    webapp2.Route(r'/book/<isbn>', handler=BookByISBNHandler, name='book-by-isbn'),
+    webapp2.Route(r'/product/<product_id>/reviews', handler=ReviewsForProductHandler, name='reviews-for-product'),
+    webapp2.Route(r'/member/<reviewer_id>/reviews', handler=ReviewsForMemberHandler, name='reviews-for-member'),
+    webapp2.Route(r'/review/<product_id>/member/<reviewer_id>', handler=ReviewHandler, name='review'),
 ])
-
-# this is the json object in the request body for our new book
-# {
-# "title": "Our Awesome Book",
-# "author": "Kim, Jung",
-# "publication_year": 2015
-# }
