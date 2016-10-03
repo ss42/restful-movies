@@ -4,3 +4,7 @@ gae/.idea/workspace.xml
 gae/.idea/tasks.xml
 
 *.pyc
+
+# We are not going to check in the millions of Amazon reviews
+
+amazon-data/Movies_and_TV_5.json
