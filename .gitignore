@@ -1,0 +1,6 @@
+# Per Jetbrains, we ignore certain IDEA files (https://intellij-support.jetbrains.com/hc/en-us/articles/206544839-How-to-manage-projects-under-Version-Control-Systems):
+
+gae/.idea/workspace.xml
+gae/.idea/tasks.xml
+
+*.pyc
