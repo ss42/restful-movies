@@ -7,16 +7,41 @@ from review_util import review_properties
 
 
 class ReviewsForProductHandler(webapp2.RequestHandler):
+
     def get(self, product_id):
+
+        # TODO: Find by product_id should do something similar to find by member_id.
+
         pass
 
 
 class ReviewsForMemberHandler(webapp2.RequestHandler):
+
     def get(self, member_id):
-        pass
+        q = Review.query().filter(Review.member_id == member_id)
+        count = q.count()
+        to_fetch = count if count < 10 else 10
+        results = q.fetch(to_fetch)
+        print("Found " + str(count) + " reviews for member " + member_id + ", returning " + str(to_fetch))
+        self.response.headers["Content-Type"] = "text/plain"
+        first_result = True
+        for result in results:
+            if first_result:
+                self.response.write('{\n    "reviews" : [\n')
+                first_result = False
+            else:
+                self.response.write(',\n')
+            json_response_dict = result.to_dict()
+            json_response_dict["time"] = json_response_dict["time"].isoformat() + "Z"
+            json_response_string = json.dumps(json_response_dict)
+            self.response.write('        ')
+            self.response.write(json_response_string)
+        self.response.write('\n    ]\n}\n')
 
 
 class ReviewHandler(webapp2.RequestHandler):
+
+    # TODO: Post should update a review (or fail) if there is one already existing instead of creating a duplicate.
 
     def post(self, product_id, member_id):
         json_string = self.request.body
