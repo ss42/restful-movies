@@ -2,6 +2,8 @@ import json
 
 import webapp2
 
+from google.appengine.api import taskqueue
+
 from review import Review
 from review_util import review_properties
 
@@ -10,7 +12,8 @@ class ReviewsForProductHandler(webapp2.RequestHandler):
 
     def get(self, product_id):
 
-        # TODO: Find by product_id should do something similar to find by member_id.
+        # PART I of this week's homework goes here. It is straightforward because
+        # you can model your code on code that already works in ReviewsForMemberHandler.
 
         pass
 
@@ -72,8 +75,19 @@ class ReviewHandler(webapp2.RequestHandler):
         self.response.write(json_response_string)
 
 
+class AverageRatingTaskLauncher(webapp2.RequestHandler):
+
+    def put(self, product_id):
+        taskqueue.add(queue_name='average_ratings',
+                      name='average_product_' + product_id,
+                      payload=product_id)
+        self.response.write("Enqueued task to average ratings for product " + product_id)
+
+
 app = webapp2.WSGIApplication([
     webapp2.Route(r'/product/<product_id>/reviews', handler=ReviewsForProductHandler, name='reviews-for-product'),
     webapp2.Route(r'/member/<member_id>/reviews', handler=ReviewsForMemberHandler, name='reviews-for-member'),
     webapp2.Route(r'/product/<product_id>/member/<member_id>', handler=ReviewHandler, name='review'),
+    webapp2.Route(r'/product/<product_id>/calculate_average_rating', handler=AverageRatingTaskLauncher,
+                  name='calculate_average_rating'),
 ])

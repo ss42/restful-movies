@@ -1,0 +1,3 @@
+queue:
+  - name: average_ratings
+    rate: 10/s

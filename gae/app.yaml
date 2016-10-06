@@ -9,6 +9,10 @@ handlers:
   static_files: favicon.ico
   upload: favicon\.ico
 
+- url: /_ah/queue/calculate_average
+  script: calculate_average.app
+  login: admin
+
 - url: .*
   script: main.app
 
