@@ -67,9 +67,9 @@ class ReviewHandler(webapp2.RequestHandler):
 
 class AverageRatingTaskLauncher(webapp2.RequestHandler):
 
-    def put(self, product_id):
-        taskqueue.add(queue_name='average_ratings',
-                      name='average_product_' + product_id,
+    def get(self, product_id):
+        taskqueue.add(queue_name='average-ratings',
+                      name='average_ratings_for_product_' + product_id,
                       payload=product_id)
         self.response.write("Enqueued task to average ratings for product " + product_id)
 
@@ -79,5 +79,5 @@ app = webapp2.WSGIApplication([
     webapp2.Route(r'/member/<member_id>/reviews', handler=ReviewsForMemberHandler, name='reviews-for-member'),
     webapp2.Route(r'/product/<product_id>/member/<member_id>', handler=ReviewHandler, name='review'),
     webapp2.Route(r'/product/<product_id>/calculate_average_rating', handler=AverageRatingTaskLauncher,
-                  name='calculate_average_rating'),
+                  name='calculate-average-rating'),
 ])
