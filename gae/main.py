@@ -5,17 +5,19 @@ import webapp2
 from google.appengine.api import taskqueue
 
 from review import Review
-from review_util import review_properties
+from review_util import review_properties, write_reviews
 
 
 class ReviewsForProductHandler(webapp2.RequestHandler):
 
     def get(self, product_id):
-
-        # PART I of this week's homework goes here. It is straightforward because
-        # you can model your code on code that already works in ReviewsForMemberHandler.
-
-        pass
+        q = Review.query().filter(Review.product_id == product_id)
+        count = q.count()
+        to_fetch = count if count < 10 else 10
+        reviews = q.fetch(to_fetch)
+        print("Found " + str(count) + " reviews for product " + product_id + ", returning " + str(to_fetch))
+        self.response.headers["Content-Type"] = "application/json"
+        write_reviews(reviews, self.response)
 
 
 class ReviewsForMemberHandler(webapp2.RequestHandler):
@@ -24,22 +26,10 @@ class ReviewsForMemberHandler(webapp2.RequestHandler):
         q = Review.query().filter(Review.member_id == member_id)
         count = q.count()
         to_fetch = count if count < 10 else 10
-        results = q.fetch(to_fetch)
+        reviews = q.fetch(to_fetch)
         print("Found " + str(count) + " reviews for member " + member_id + ", returning " + str(to_fetch))
-        self.response.headers["Content-Type"] = "text/plain"
-        first_result = True
-        for result in results:
-            if first_result:
-                self.response.write('{\n    "reviews" : [\n')
-                first_result = False
-            else:
-                self.response.write(',\n')
-            json_response_dict = result.to_dict()
-            json_response_dict["time"] = json_response_dict["time"].isoformat() + "Z"
-            json_response_string = json.dumps(json_response_dict)
-            self.response.write('        ')
-            self.response.write(json_response_string)
-        self.response.write('\n    ]\n}\n')
+        self.response.headers["Content-Type"] = "application/json"
+        write_reviews(reviews, self.response)
 
 
 class ReviewHandler(webapp2.RequestHandler):
