@@ -5,17 +5,19 @@ import webapp2
 from google.appengine.api import taskqueue
 
 from review import Review
-from review_util import review_properties
+from review_util import review_properties, write_reviews
 
 
 class ReviewsForProductHandler(webapp2.RequestHandler):
 
     def get(self, product_id):
-
-        # PART I of this week's homework goes here. It is straightforward because
-        # you can model your code on code that already works in ReviewsForMemberHandler.
-
-        pass
+        q = Review.query().filter(Review.product_id == product_id)
+        count = q.count()
+        to_fetch = count if count < 10 else 10
+        reviews = q.fetch(to_fetch)
+        print("Found " + str(count) + " reviews for product " + product_id + ", returning " + str(to_fetch))
+        self.response.headers["Content-Type"] = "application/json"
+        write_reviews(reviews, self.response)
 
 
 class ReviewsForMemberHandler(webapp2.RequestHandler):
@@ -24,22 +26,10 @@ class ReviewsForMemberHandler(webapp2.RequestHandler):
         q = Review.query().filter(Review.member_id == member_id)
         count = q.count()
         to_fetch = count if count < 10 else 10
-        results = q.fetch(to_fetch)
+        reviews = q.fetch(to_fetch)
         print("Found " + str(count) + " reviews for member " + member_id + ", returning " + str(to_fetch))
-        self.response.headers["Content-Type"] = "text/plain"
-        first_result = True
-        for result in results:
-            if first_result:
-                self.response.write('{\n    "reviews" : [\n')
-                first_result = False
-            else:
-                self.response.write(',\n')
-            json_response_dict = result.to_dict()
-            json_response_dict["time"] = json_response_dict["time"].isoformat() + "Z"
-            json_response_string = json.dumps(json_response_dict)
-            self.response.write('        ')
-            self.response.write(json_response_string)
-        self.response.write('\n    ]\n}\n')
+        self.response.headers["Content-Type"] = "application/json"
+        write_reviews(reviews, self.response)
 
 
 class ReviewHandler(webapp2.RequestHandler):
@@ -77,9 +67,9 @@ class ReviewHandler(webapp2.RequestHandler):
 
 class AverageRatingTaskLauncher(webapp2.RequestHandler):
 
-    def put(self, product_id):
-        taskqueue.add(queue_name='average_ratings',
-                      name='average_product_' + product_id,
+    def get(self, product_id):
+        taskqueue.add(queue_name='average-ratings',
+                      name='average_ratings_for_product_' + product_id,
                       payload=product_id)
         self.response.write("Enqueued task to average ratings for product " + product_id)
 
@@ -89,5 +79,5 @@ app = webapp2.WSGIApplication([
     webapp2.Route(r'/member/<member_id>/reviews', handler=ReviewsForMemberHandler, name='reviews-for-member'),
     webapp2.Route(r'/product/<product_id>/member/<member_id>', handler=ReviewHandler, name='review'),
     webapp2.Route(r'/product/<product_id>/calculate_average_rating', handler=AverageRatingTaskLauncher,
-                  name='calculate_average_rating'),
+                  name='calculate-average-rating'),
 ])

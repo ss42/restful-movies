@@ -1,26 +1,27 @@
-# A review comes to us with a JSON body in this form:
+import json
 
+from datetime import datetime
+
+
+# Takes JSON reviews in the format they come in to our server and converts them to
+# our dictionary format for reviews.
+#
+# This is the incoming format:
+#
 # {
 #     "unixReviewTime": 1252800000,
 #     "overall": 5.0,
 #     "summary": "Heavenly Highway Hymns",
 #     "reviewText": "I bought this for my husband who plays the piano.",
 # }
-
-# From the body and the positional parameters, store the following properties:
-
-# member_id = ndb.KeyProperty(indexed=False)
-# product_id = ndb.KeyProperty(indexed=False)
+#
+# This is our internal format:
+#
 # time = ndb.DateTimeProperty(indexed=False)
 # rating = ndb.FloatProperty(indexed=False)
 # summary = ndb.StringProperty(indexed=False)
 # text = ndb.TextProperty(indexed=False)
-
-import json
-
-from datetime import datetime
-
-
+#
 def review_properties(json_string):
 
     raw_props = json.loads(json_string)
@@ -43,3 +44,24 @@ def review_properties(json_string):
             pass
 
     return review_props
+
+
+# Takes an array of reviews and writes them as JSON to the writable object.
+def write_reviews(reviews, writable):
+
+    first_result = True
+
+    for review in reviews:
+        if first_result:
+            writable.write('{\n    "reviews" : [\n')
+            first_result = False
+        else:
+            writable.write(',\n')
+
+        json_response_dict = review.to_dict()
+        json_response_dict["time"] = json_response_dict["time"].isoformat() + "Z"
+        json_response_string = json.dumps(json_response_dict)
+        writable.write('        ')
+        writable.write(json_response_string)
+
+    writable.write('\n    ]\n}\n')
